@@ -14,6 +14,7 @@ import {
   type FinancialKind,
   isExternal,
 } from "./rules";
+import { CARD_SETTLEMENT_CATEGORY } from "../catalog/catalog";
 
 export type TransactionDraft = {
   type: "EXPENSE" | "FINANCIAL";
@@ -67,6 +68,9 @@ async function validateDraft(tx: Tx, draft: TransactionDraft, ctx: CommandContex
     const classificationChanged = !existing || existing.categoryId !== draft.categoryId || existing.subcategoryId !== draft.subcategoryId;
     if (classificationChanged && (subcategory.archivedAt || subcategory.parent.archivedAt)) add("subcategoryId", "Archived classifications cannot be assigned.");
     if (draft.type === "EXPENSE" && subcategory.isSystem) add("subcategoryId", "Choose a spending subcategory for an expense.");
+    if (draft.financialKind === "CARD_PAYMENT" && draft.categoryId !== CARD_SETTLEMENT_CATEGORY.id) {
+      add("categoryId", "Choose a card settlement line for this payment.");
+    }
     if (draft.financialKind === "INCOME" && subcategory.id !== SYSTEM_TRANSFER_SUB) {
       add("subcategoryId", "Income is classified under Accounts / Transfer.");
     }

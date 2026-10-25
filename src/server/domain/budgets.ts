@@ -5,6 +5,7 @@ import { formatMinor } from "../lib/money";
 import { assertMonth } from "../lib/calendar";
 import { audit, bumpDataRevision, refreshBudgetMonth, type Tx } from "./projections";
 import { PLANNING_CLASSES, type PlanningClass } from "./rules";
+import { CARD_SETTLEMENT_CATEGORY, defaultPlanningClass } from "../catalog/catalog";
 
 export type BudgetLineInput = {
   categoryId: string;
@@ -21,10 +22,10 @@ export type CommandContext = { today: string; requestId?: string };
  * Unknown, duplicate, or missing children are rejected so a plan cannot be saved by omission.
  */
 async function validateLines(tx: Tx, lines: BudgetLineInput[]) {
-  const children = await tx.subcategory.findMany({
-    where: { isSystem: false, archivedAt: null, parent: { archivedAt: null, isSystem: false } },
-    select: { id: true, parentCategoryId: true },
-  });
+  const children = (await tx.subcategory.findMany({
+    where: { archivedAt: null, parent: { archivedAt: null } },
+    select: { id: true, parentCategoryId: true, isSystem: true, parent: { select: { isSystem: true } } },
+  })).filter((child) => (!child.isSystem && !child.parent.isSystem) || child.parentCategoryId === CARD_SETTLEMENT_CATEGORY.id);
   const expected = new Map(children.map((c) => [`${c.parentCategoryId}/${c.id}`, true]));
   const seen = new Set<string>();
   const fieldErrors: Record<string, string[]> = {};
@@ -36,7 +37,9 @@ async function validateLines(tx: Tx, lines: BudgetLineInput[]) {
     }
     if (seen.has(key)) fieldErrors[key] = ["Listed more than once."];
     seen.add(key);
-    if (!(PLANNING_CLASSES as readonly string[]).includes(line.planningClass)) fieldErrors[key] = ["Choose regular spending or card settlement."];
+    if (!(PLANNING_CLASSES as readonly string[]).includes(line.planningClass) || line.planningClass !== defaultPlanningClass(line.categoryId, line.subcategoryId)) {
+      fieldErrors[key] = ["The budget lane is determined by the selected subcategory."];
+    }
     if (!Number.isInteger(line.alertThresholdBps) || line.alertThresholdBps < 0 || line.alertThresholdBps > 10000) {
       fieldErrors[key] = ["Alert threshold must be between 0 and 10000 basis points."];
     }

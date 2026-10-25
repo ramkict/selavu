@@ -1,0 +1,174 @@
+[
+  {
+    "id": "housing",
+    "name": "Home and Household Operations",
+    "icon": "house",
+    "color": "#087f77",
+    "subCategories": [
+      { "id": "rent", "name": "Rent" },
+      { "id": "home_loan_emi", "name": "Home-loan" },
+      { "id": "apartment_maintenance", "name": "Apartment maintenance" },
+      { "id": "electricity", "name": "Electricity" },
+      { "id": "water_supply", "name": "Water Supply" },
+      { "id": "lpg_cylinder", "name": "LPG cylinder" },
+      { "id": "home_repairs", "name": "Repairs" },
+      { "id": "cleaning_pest_control", "name": "Cleaning and pest control" },
+      { "id": "domestic_help", "name": "Domestic help" },
+      { "id": "laundry_ironing", "name": "Laundry and ironing" }
+    ]
+  },
+  {
+    "id": "groceries_everyday",
+    "name": "Groceries and Everyday Food",
+    "icon": "shopping-basket",
+    "color": "#d99a2b",
+    "subCategories": [
+      { "id": "provisions", "name": "Provisions" },
+      { "id": "vegetables_fruits", "name": "Vegetables and Fruits" },
+      { "id": "milk", "name": "Milk" }
+    ]
+  },
+  {
+    "id": "food",
+    "name": "Food",
+    "icon": "utensils",
+    "color": "#df705d",
+    "subCategories": [
+      { "id": "dine_out", "name": "Dine Out" },
+      { "id": "take_away", "name": "Take Away" },
+      { "id": "snacks", "name": "Snacks" }
+    ]
+  },
+  {
+    "id": "transportation",
+    "name": "Transport and Commuting",
+    "icon": "car-front",
+    "color": "#538bd0",
+    "subCategories": [
+      { "id": "public_transport", "name": "Public transport" },
+      { "id": "auto_taxi_app_rides", "name": "Auto, taxi, and app-based rides" },
+      { "id": "fuel_charging", "name": "Petrol, diesel, or EV charging" },
+      { "id": "vehicle_service_repairs", "name": "Vehicle servicing, repairs, tyres, and accessories" },
+      { "id": "parking_tolls", "name": "Parking, tolls, and permits" },
+      { "id": "school_college_transport", "name": "School or college transport" }
+    ]
+  },
+  {
+    "id": "education",
+    "name": "Education and Skill Development",
+    "icon": "graduation-cap",
+    "color": "#7e68b2",
+    "subCategories": [
+      { "id": "school_college_fees", "name": "School, college, or university fees" },
+      { "id": "books_stationery_uniforms", "name": "Books, stationery, uniforms, and bags" },
+      { "id": "coaching_tuition", "name": "Coaching / Tuition fees" },
+      { "id": "daycare_after_school", "name": "Daycare and after-school care" },
+      { "id": "music_dance_classes", "name": "Music, dance, or other classes" },
+      { "id": "online_learning", "name": "Online courses and learning subscriptions" }
+    ]
+  },
+  {
+    "id": "healthcare",
+    "name": "Healthcare and Wellbeing",
+    "icon": "heart-pulse",
+    "color": "#d46c83",
+    "subCategories": [
+      { "id": "doctor_hospital", "name": "Doctor consultations and hospital care" },
+      { "id": "tests_diagnostics", "name": "Tests, scans, and diagnostics" },
+      { "id": "medicines_supplies", "name": "Medicines and medical supplies" },
+      { "id": "dental_eye_care", "name": "Dental and eye care" },
+      { "id": "therapy_wellbeing", "name": "Therapy, physiotherapy, and mental health care" },
+      { "id": "preventive_care", "name": "Preventive care and vaccinations" },
+      { "id": "health_insurance", "name": "Health-insurance premiums" }
+    ]
+  },
+  {
+    "id": "personal_care",
+    "name": "Clothing and Personal Care",
+    "icon": "shirt",
+    "color": "#b96d9b",
+    "subCategories": [
+      { "id": "everyday_clothing", "name": "Everyday clothing" },
+      { "id": "footwear", "name": "Footwear" },
+      { "id": "tailoring_alterations", "name": "Tailoring, alterations, and repairs" },
+      { "id": "haircuts_grooming", "name": "Haircuts and grooming" },
+      { "id": "toiletries_personal_care", "name": "Toiletries and personal-care products" },
+      { "id": "dry_cleaning", "name": "Laundry or dry-cleaning services" }
+    ]
+  },
+  {
+    "id": "home_equipment",
+    "name": "Home Furnishings and Equipment",
+    "icon": "sofa",
+    "color": "#68a787",
+    "subCategories": [
+      { "id": "furniture_bedding", "name": "Furniture and bedding" },
+      { "id": "kitchenware_appliances", "name": "Kitchenware and appliances" },
+      { "id": "electronics_equipment", "name": "Electronics and small equipment" },
+      { "id": "equipment_repairs", "name": "Repairs and replacement parts" },
+      { "id": "household_setup_relocation", "name": "Household setup or relocation purchases" }
+    ]
+  },
+  {
+    "id": "communications",
+    "name": "Communication and Digital Services",
+    "icon": "wifi",
+    "color": "#3e9bad",
+    "subCategories": [
+      { "id": "mobile_bills_recharges", "name": "Mobile Bills, Recharges" },
+      { "id": "home_internet", "name": "Home internet" },
+      { "id": "streaming_subscriptions", "name": "Streaming and entertainment subscriptions" },
+      { "id": "cloud_software_subscriptions", "name": "Cloud storage, software, and app subscriptions" },
+      { "id": "device_repair_accessories", "name": "Device repair and accessories" }
+    ]
+  },
+  {
+    "id": "festivals_community",
+    "name": "Festivals, Ceremonies, and Community Life",
+    "icon": "sparkles",
+    "color": "#d08348",
+    "subCategories": [
+      { "id": "festival_meals_decorations", "name": "Festival meals, ingredients, and decorations" },
+      { "id": "worship_supplies", "name": "Household or community worship supplies" },
+      { "id": "temple_contributions", "name": "Temple contributions" },
+      { "id": "weddings_family_ceremonies", "name": "Weddings, family functions, and ceremony expenses" },
+      { "id": "celebration_gifts_travel", "name": "Gifts, clothing, and travel for celebrations" },
+      { "id": "community_events", "name": "Community events and local associations" }
+    ]
+  },
+  {
+    "id": "entertainment",
+    "name": "Recreation and Personal Interests",
+    "icon": "clapperboard",
+    "color": "#668bc0",
+    "subCategories": [
+      { "id": "books_games_hobbies", "name": "Books, games, and hobbies" },
+      { "id": "sports_fitness", "name": "Sports, fitness, and recreation" },
+      { "id": "movies_performances", "name": "Movies, performances, and events" },
+      { "id": "clubs_memberships", "name": "Clubs and memberships" },
+      { "id": "short_outings", "name": "Short outings and family activities" }
+    ]
+  },
+  {
+    "id": "insurance_taxes",
+    "name": "Insurance, Taxes, and Financial Costs",
+    "icon": "receipt",
+    "color": "#778a4b",
+    "subCategories": [
+      { "id": "life_insurance", "name": "Life insurance" },
+      { "id": "vehicle_insurance", "name": "Vehicle Insurance" },
+      { "id": "property_taxes", "name": "Property Taxes" },
+      { "id": "water_taxes", "name": "Water Taxes" },
+      { "id": "other_fees", "name": "Others Fees" }
+    ]
+  },
+  {
+    "id": "donation",
+    "name": "Giving and Mutual Aid",
+    "icon": "hand-heart",
+    "color": "#14a891",
+    "subCategories": [
+      { "id": "donations", "name": "Donations" }
+    ]
+  }
+]

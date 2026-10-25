@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { parseMoneyToMinor } from "@/server/lib/money";
 import { ApiError, apiRequest, newIdempotencyKey, type FieldErrors } from "./api";
+import { CARD_SETTLEMENT_CATEGORY_ID } from "@/server/domain/rules";
 
 type Option = { id: string; name: string };
 type ExistingTransaction = {
@@ -29,6 +30,7 @@ type Props = {
   sourceAccounts: (Option & { accountType: string })[];
   destinationAccounts: (Option & { accountType: string })[];
   categories: { id: string; name: string; subcategories: Option[] }[];
+  settlementOptions: Option[];
   paymentModes: Option[];
   defaultDate: string;
   maxDate: string;
@@ -36,7 +38,7 @@ type Props = {
   existing?: ExistingTransaction;
 };
 
-export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories, paymentModes, defaultDate, maxDate, month, existing }: Props) {
+export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories, settlementOptions, paymentModes, defaultDate, maxDate, month, existing }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -46,6 +48,9 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
   const subs = categories.find((c) => c.id === categoryId)?.subcategories ?? [];
   const [key, setKey] = useState(newIdempotencyKey());
   const [kind, setKind] = useState(existing?.type === "EXPENSE" ? "EXPENSE" : existing?.financialKind ?? "EXPENSE");
+  const [settlementSubcategoryId, setSettlementSubcategoryId] = useState(
+    existing?.financialKind === "CARD_PAYMENT" ? existing.subcategory.id : settlementOptions[0]?.id ?? "",
+  );
   const expense = kind === "EXPENSE";
   const sources = sourceAccounts.filter((a) => {
     const allowed = kind === "INCOME" ? a.accountType === "EXTERNAL_INCOME"
@@ -90,8 +95,8 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
       destinationAccountId: String(data.get("destinationAccountId") ?? ""),
       paymentModeId: expense ? String(data.get("paymentModeId") || "") || null : null,
       expenseLocation: expense ? String(data.get("expenseLocation") || "CHE") : null,
-      categoryId: expense ? categoryId : "sys_accounts",
-      subcategoryId: expense ? String(data.get("subcategoryId") ?? "") : "sys_transfer",
+      categoryId: expense ? categoryId : kind === "CARD_PAYMENT" ? CARD_SETTLEMENT_CATEGORY_ID : "sys_accounts",
+      subcategoryId: expense ? String(data.get("subcategoryId") ?? "") : kind === "CARD_PAYMENT" ? String(data.get("settlementSubcategoryId") ?? settlementSubcategoryId) : "sys_transfer",
       incomeType: kind === "INCOME" ? String(data.get("incomeType") || "") || null : null,
       incomeSourceLabel: kind === "INCOME" ? String(data.get("incomeSourceLabel") || "") || null : null,
       recurring: kind === "INCOME" && data.get("recurring") === "on",
@@ -224,6 +229,7 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
           {err("subcategoryId")}
         </div>
       </div> : null}
+      {kind === "CARD_PAYMENT" ? <div className="field"><label htmlFor="settlement-subcategory">Settlement budget line</label><select id="settlement-subcategory" name="settlementSubcategoryId" value={settlementSubcategoryId} onChange={(event) => setSettlementSubcategoryId(event.target.value)} required>{settlementOptions.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select><small className="muted">Card payment remains a settlement, not a second expense.</small></div> : null}
       {kind === "INCOME" ? <div className="form-row">
         <div className="field"><label htmlFor="income-type">Income type</label><input id="income-type" name="incomeType" maxLength={40} defaultValue={existing?.incomeType ?? ""} /></div>
         <div className="field"><label htmlFor="income-source-label">Income source</label><input id="income-source-label" name="incomeSourceLabel" maxLength={120} defaultValue={existing?.incomeSourceLabel ?? ""} /></div>

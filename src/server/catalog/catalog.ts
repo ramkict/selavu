@@ -1,8 +1,9 @@
-import catalogJson from "./cat.json";
+import catalogJson from "./household.json";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { normalizeName } from "../lib/text";
 import { todayIn } from "../lib/calendar";
 import { refreshAccounts } from "../domain/projections";
+import { CARD_SETTLEMENT_CATEGORY_ID } from "../domain/rules";
 
 export type PlanningClass = "EXPENSE" | "CARD_SETTLEMENT";
 
@@ -13,6 +14,12 @@ export const CATALOG = catalogJson as CatalogCategory[];
 
 export const SYSTEM_CATEGORY = { id: "sys_accounts", name: "Accounts", icon: "account_balance", color: "#64748b" };
 export const SYSTEM_SUBCATEGORY = { id: "sys_transfer", name: "Transfer", parentCategoryId: SYSTEM_CATEGORY.id };
+export const CARD_SETTLEMENT_CATEGORY = { id: CARD_SETTLEMENT_CATEGORY_ID, name: "Card Settlement", icon: "credit-card", color: "#3e9bad" };
+export const CARD_SETTLEMENT_SUBCATEGORIES = [
+  { id: "credit_card_1", parentCategoryId: CARD_SETTLEMENT_CATEGORY.id, name: "Credit Card 1" },
+  { id: "credit_card_2", parentCategoryId: CARD_SETTLEMENT_CATEGORY.id, name: "Credit Card 2" },
+  { id: "credit_card_3", parentCategoryId: CARD_SETTLEMENT_CATEGORY.id, name: "Credit Card 3" },
+];
 
 export const PAYMENT_MODES = [
   { id: "cash", name: "Cash" },
@@ -39,7 +46,7 @@ export const SYSTEM_ACCOUNTS = [
  * Card repayments remain a separate planning lane; every other subcategory is regular spending.
  */
 export function defaultPlanningClass(categoryId: string, subcategoryId: string): PlanningClass {
-  if (categoryId === "loan" && subcategoryId.startsWith("credit_card_")) return "CARD_SETTLEMENT";
+  if (categoryId === CARD_SETTLEMENT_CATEGORY.id && subcategoryId.startsWith("credit_card_")) return "CARD_SETTLEMENT";
   return "EXPENSE";
 }
 
@@ -55,6 +62,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<{ insertedCateg
   const categoryRows = [
     ...CATALOG.map((c) => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, isSystem: false })),
     { id: SYSTEM_CATEGORY.id, name: SYSTEM_CATEGORY.name, icon: SYSTEM_CATEGORY.icon, color: SYSTEM_CATEGORY.color, isSystem: true },
+    { id: CARD_SETTLEMENT_CATEGORY.id, name: CARD_SETTLEMENT_CATEGORY.name, icon: CARD_SETTLEMENT_CATEGORY.icon, color: CARD_SETTLEMENT_CATEGORY.color, isSystem: true },
   ];
   for (const row of categoryRows) {
     const exists = await prisma.category.findUnique({ where: { id: row.id }, select: { id: true } });
@@ -66,6 +74,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<{ insertedCateg
   const subRows = [
     ...CATALOG.flatMap((c) => c.subCategories.map((s) => ({ id: s.id, parentCategoryId: c.id, name: s.name, isSystem: false }))),
     { id: SYSTEM_SUBCATEGORY.id, parentCategoryId: SYSTEM_CATEGORY.id, name: SYSTEM_SUBCATEGORY.name, isSystem: true },
+    ...CARD_SETTLEMENT_SUBCATEGORIES.map((subcategory) => ({ ...subcategory, isSystem: true })),
   ];
   for (const row of subRows) {
     const exists = await prisma.subcategory.findUnique({ where: { id: row.id }, select: { id: true } });

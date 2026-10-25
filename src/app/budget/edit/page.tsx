@@ -5,6 +5,7 @@ import { getSettings, listCategories } from "@/server/domain/reference";
 import { currentMonthIn, isValidMonth } from "@/server/lib/calendar";
 import { minorToRupeeInput } from "@/server/lib/money";
 import { BudgetForm } from "@/components/BudgetForm";
+import { CARD_SETTLEMENT_CATEGORY } from "@/server/catalog/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +28,12 @@ export default async function EditBudgetPage({ searchParams }: { searchParams: P
   }
 
   const active = categories
-    .filter((c) => !c.isSystem && !c.archivedAt)
+    .filter((c) => (!c.isSystem && !c.archivedAt) || c.id === CARD_SETTLEMENT_CATEGORY.id)
     .map((c) => ({
       id: c.id,
       name: c.name,
       subcategories: c.subcategories
-        .filter((s) => !s.isSystem && !s.archivedAt)
+        .filter((s) => (!s.isSystem && !s.archivedAt) || c.id === CARD_SETTLEMENT_CATEGORY.id)
         .map((s) => ({ id: s.id, name: s.name, suggestedPlanningClass: s.suggestedPlanningClass })),
     }));
   const amounts = Object.fromEntries(

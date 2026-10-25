@@ -87,7 +87,7 @@ describe("ledger: postings, signs, and projections", () => {
       amountMinor: 200000n,
       sourceAccountId: savings.id,
       destinationAccountId: card.id,
-      categoryId: "loan",
+      categoryId: "sys_card_settlement",
       subcategoryId: "credit_card_1",
     });
     expect(await balanceOf(db, card.id)).toBe(0n);
@@ -125,7 +125,7 @@ describe("ledger: postings, signs, and projections", () => {
         sourceAccountId: "sys_income",
         destinationAccountId: cash.id,
         categoryId: "food",
-        subcategoryId: "groceries",
+        subcategoryId: "provisions",
       }),
     ).rejects.toMatchObject({ status: 422 });
   });

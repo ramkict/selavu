@@ -10,7 +10,8 @@ Requirements: Node.js 22.12+ (tested on Node 26), npm.
 npm install
 cp .env.example .env           # optional; default DB is ./data/accounts.db
 npm run db:migrate             # apply migrations (prisma migrate deploy)
-npm run db:seed                # seed the 12/77 catalog + system records (idempotent)
+npm run db:seed                # seed the 13/68 household catalog + system records (insert-only)
+npm run db:catalog:migrate     # migrate existing built-in category history and budgets once
 npm run dev                    # http://127.0.0.1:3000
 ```
 
@@ -24,14 +25,15 @@ Production-style run: `npm run build && npm run start` (binds 127.0.0.1:3000).
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript) |
 | `npm test` | Vitest; every suite creates a fresh migrated temp SQLite DB |
 | `npm run build` | `prisma generate` + `next build` |
+| `npm run db:catalog:migrate` | Migrate existing built-in category history and budgets once; back up data first |
 
 ## What is implemented
 
-- **Catalog**: all 12 categories and 77 subcategories from `cat.json` with exact IDs, names, parents, icons, and colors. Protected system records: `sys_accounts`/`sys_transfer`, and accounts `sys_cash_in_hand`, `sys_income`, and `sys_expense`. Seeding inserts missing rows only and never overwrites edits.
+- **Catalog**: 13 household categories and 68 subcategories from `household.json`. Three protected card-settlement lines remain outside ordinary expenses. `sys_accounts`/`sys_transfer` and system accounts `sys_cash_in_hand`, `sys_income`, and `sys_expense` remain protected. Seeding inserts missing rows only; run the one-time catalog migration to update existing built-in records.
 - **Accounts**: user-selectable types are Savings, Deposits (FD), Mutual Fund (assets) and Credit Card, Loan (liabilities; positive = debt, negative = credit available). **Cash In Hand** and **Expense**/**Income** are always-present generic accounts that are not user-selectable types. Cash In Hand is an owned asset; Income and Expense are external endpoints excluded from owned totals. Type is persisted; an asset-to-liability change is rejected once the account has transactions.
 - **Account figures** (stored, rebuilt from transactions): starting balance, current balance (per account), and monthly opening and closing balances (per account and month, in the `RunningAccount` snapshot table). Expenses is visible alongside Cash In Hand; its cumulative balance and monthly snapshots are persisted, but it is not an asset and never adds to net worth. Account reads use the stored figures rather than summing expense history. Shown in ₹ with two decimals; stored as integer paise.
 - **Transactions** (every expense is a transaction): ordinary expenses are tagged CHE or HYD; CHE is the default. Financial kinds include INCOME, TRANSFER, ATM_WITHDRAWAL, CARD_PAYMENT, and BORROWING. Search, category/subcategory/account/location/type filters, sorting, versioned edit/delete, and filtered CSV export are available. Mutations recompute account balances, monthly running rows, and budget totals atomically.
-- **Shared monthly budget**: one BudgetMaster per month. Creation requires an explicit reviewed amount (including 0) for every active subcategory. Regular expenses match by month + category + subcategory; card payments retain a separate settlement lane. CHE/HYD never changes the match. Delete clears detail links and keeps all facts and balances; recreate rematches.
+- **Shared monthly budget**: one BudgetMaster per month. Creation requires an explicit reviewed amount (including 0) for every active household subcategory and each of three separate card-settlement lines. Regular expenses match by month + category + subcategory; card payments match their selected settlement line. CHE/HYD never changes the match. Delete clears detail links and keeps all facts and balances; recreate rematches.
 - **Configured months**: the header uses a `MMM-YYYY` dropdown. January through December 2026 are seeded; add future months in Admin before using them for planning and reports.
 - **Dashboard and reports**: plan-versus-actual categories, top-category chart, forecast insights, income/expense metrics, location reconciliation, account positions, and net worth as of today. Reports include category variance/mix, daily accumulation, six-month trends, independent CHE/HYD and source-account filters, and CSV export.
 - **Account and catalog administration**: account detail includes monthly snapshots and incoming/outgoing activity. Accounts, categories, and subcategories support versioned editing and archival/restoration without deleting historical activity. Subcategory parent reassignment is disabled.

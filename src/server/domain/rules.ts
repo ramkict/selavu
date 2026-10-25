@@ -28,6 +28,7 @@ export type FinancialKind = (typeof FINANCIAL_KINDS)[number];
 export const EXPENSE_LOCATIONS = ["CHE", "HYD"] as const;
 export type ExpenseLocation = (typeof EXPENSE_LOCATIONS)[number];
 export const DEFAULT_EXPENSE_LOCATION: ExpenseLocation = "CHE";
+export const CARD_SETTLEMENT_CATEGORY_ID = "sys_card_settlement";
 
 export const PLANNING_CLASSES = ["EXPENSE", "CARD_SETTLEMENT"] as const;
 export type PlanningClass = (typeof PLANNING_CLASSES)[number];

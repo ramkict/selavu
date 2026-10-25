@@ -2,7 +2,7 @@ import type { Db } from "@/server/db";
 import { createAccount } from "@/server/domain/accounts";
 import { createTransaction, type TransactionDraft } from "@/server/domain/transactions";
 import { createBudget, type BudgetLineInput } from "@/server/domain/budgets";
-import { defaultPlanningClass } from "@/server/catalog/catalog";
+import { CARD_SETTLEMENT_CATEGORY, defaultPlanningClass } from "@/server/catalog/catalog";
 import { ctx } from "./helpers";
 
 export async function openAccount(db: Db, name: string, accountType: string, openingBalanceMinor = "0", openingDate = "2026-10-01") {
@@ -16,8 +16,8 @@ export function expenseInput(overrides: Partial<TransactionDraft> & { sourceAcco
     description: "Weekly groceries",
     paymentModeId: "upi",
     expenseLocation: "CHE" as const,
-    categoryId: "food",
-    subcategoryId: "groceries",
+    categoryId: "groceries_everyday",
+    subcategoryId: "provisions",
     destinationAccountId: "sys_expense",
     ...overrides,
   };
@@ -29,11 +29,11 @@ export async function addTransaction(db: Db, input: Parameters<typeof createTran
 
 /** One line for every active non-system subcategory; `amounts` overrides the default zero plan (keys are subcategory IDs). */
 export async function fullBudgetLines(db: Db, amounts: Record<string, bigint> = {}): Promise<BudgetLineInput[]> {
-  const subs = await db.subcategory.findMany({
-    where: { isSystem: false, archivedAt: null },
-    select: { id: true, parentCategoryId: true },
+  const subs = (await db.subcategory.findMany({
+    where: { archivedAt: null, parent: { archivedAt: null } },
+    select: { id: true, parentCategoryId: true, isSystem: true, parent: { select: { isSystem: true } } },
     orderBy: [{ parentCategoryId: "asc" }, { id: "asc" }],
-  });
+  })).filter((subcategory) => (!subcategory.isSystem && !subcategory.parent.isSystem) || subcategory.parentCategoryId === CARD_SETTLEMENT_CATEGORY.id);
   return subs.map((s) => ({
     categoryId: s.parentCategoryId,
     subcategoryId: s.id,

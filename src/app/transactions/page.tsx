@@ -6,6 +6,7 @@ import { currentMonthIn, isValidMonth, todayIn } from "@/server/lib/calendar";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
 import { TransactionActions, TransactionExport } from "@/components/TransactionTools";
 import { EXPENSE_LOCATIONS, FINANCIAL_KINDS } from "@/server/domain/rules";
+import { CARD_SETTLEMENT_CATEGORY } from "@/server/catalog/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     name: c.name,
     subcategories: c.subcategories.filter((s) => !s.isSystem && (!s.archivedAt || s.id === existing?.subcategory.id)).map((s) => ({ id: s.id, name: s.name })),
   }));
+  const settlementOptions = data.categories.find((category) => category.id === CARD_SETTLEMENT_CATEGORY.id)?.subcategories
+    .filter((subcategory) => !subcategory.archivedAt)
+    .map((subcategory) => ({ id: subcategory.id, name: subcategory.name })) ?? [];
   const defaultDate = data.month === data.today.slice(0, 7) ? data.today : `${data.month}-01`;
 
   return (
@@ -61,6 +65,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         sourceAccounts={sources}
         destinationAccounts={destinations}
         categories={categories}
+        settlementOptions={settlementOptions}
         paymentModes={data.modes}
         defaultDate={existing?.date ?? defaultDate}
         maxDate={data.today}

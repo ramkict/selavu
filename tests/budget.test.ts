@@ -20,8 +20,8 @@ describe("shared monthly budget", () => {
     expect(che.budgetMatch).toBe("UNBUDGETED");
     expect(hyd.budgetMatch).toBe("UNBUDGETED");
 
-    const budget = await addBudget(db, "2026-10", { groceries: 200000n });
-    expect(budget.details.find((d) => d.subcategoryId === "groceries")).toMatchObject({
+    const budget = await addBudget(db, "2026-10", { provisions: 200000n });
+    expect(budget.details.find((d) => d.subcategoryId === "provisions")).toMatchObject({
       budgetAmountMinor: "200000",
       spendMinor: "150000",
       balanceMinor: "50000",
@@ -54,9 +54,9 @@ describe("shared monthly budget", () => {
   });
 
   it("a zero plan with actual spend is explicit overspend with null utilization", async () => {
-    await addTransaction(db, expenseInput({ sourceAccountId: savings.id, amountMinor: 30000n, date: "2026-10-12", subcategoryId: "dining_out" }));
+    await addTransaction(db, expenseInput({ sourceAccountId: savings.id, amountMinor: 30000n, date: "2026-10-12", categoryId: "food", subcategoryId: "dine_out" }));
     const master = await db.$transaction((tx) => getBudgetByMonth(tx, "2026-10"));
-    const dining = master!.details.find((d) => d.subcategoryId === "dining_out")!;
+    const dining = master!.details.find((d) => d.subcategoryId === "dine_out")!;
     expect(dining.budgetAmountMinor).toBe("0");
     expect(dining.spendMinor).toBe("30000");
     expect(dining.utilizationBps).toBeNull();
@@ -74,13 +74,13 @@ describe("shared monthly budget", () => {
     expect(await db.transaction.count({ where: { date: { startsWith: "2026-10" } } })).toBeGreaterThan(0);
     expect(await balanceOf(db, savings.id)).toBe(balance);
 
-    const recreated = await addBudget(db, "2026-10", { groceries: 150000n });
-    expect(recreated.details.find((d) => d.subcategoryId === "groceries")!.spendMinor).toBe("150000");
+    const recreated = await addBudget(db, "2026-10", { provisions: 150000n });
+    expect(recreated.details.find((d) => d.subcategoryId === "provisions")!.spendMinor).toBe("150000");
   });
 
   it("updates planned amounts with version checks and recalculates remaining provision", async () => {
     const budget = (await db.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!;
-    const lines = (await fullBudgetLines(db, { groceries: 300000n })).map((l) => ({ ...l }));
+    const lines = (await fullBudgetLines(db, { provisions: 300000n })).map((l) => ({ ...l }));
     await expect(db.$transaction((tx) => updateBudget(tx, budget.id, budget.version + 1, { lines }, ctx))).rejects.toMatchObject({ status: 409 });
     const updated = await db.$transaction((tx) => updateBudget(tx, budget.id, budget.version, { lines }, ctx));
     expect(updated.version).toBe(budget.version + 1);
@@ -110,8 +110,8 @@ describe("shared monthly budget", () => {
           destinationAccountId: "sys_expense",
           paymentModeId: "upi",
           expenseLocation: "CHE",
-          categoryId: "food",
-          subcategoryId: "groceries",
+          categoryId: "groceries_everyday",
+          subcategoryId: "provisions",
           incomeType: null,
           incomeSourceLabel: null,
           recurring: false,
@@ -136,12 +136,12 @@ describe("shared monthly budget", () => {
 
   it("allows an explicit zero planned amount when editing the budget", async () => {
     const budget = (await db.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!;
-    const lines = (await fullBudgetLines(db, { groceries: 0n })).map((l) => ({ ...l }));
+    const lines = (await fullBudgetLines(db, { provisions: 0n })).map((l) => ({ ...l }));
     const updated = await db.$transaction((tx) => updateBudget(tx, budget.id, budget.version, { lines }, ctx));
-    const groceries = updated.details.find((d) => d.subcategoryId === "groceries")!;
-    expect(groceries.budgetAmountMinor).toBe("0");
-    expect(groceries.spendMinor).toBe("150000");
-    expect(groceries.utilizationBps).toBeNull();
+    const provisions = updated.details.find((d) => d.subcategoryId === "provisions")!;
+    expect(provisions.budgetAmountMinor).toBe("0");
+    expect(provisions.spendMinor).toBe("150000");
+    expect(provisions.utilizationBps).toBeNull();
     expect(updated.totals.totalProvisionedMinor).toBe("0");
   });
 });
