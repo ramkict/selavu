@@ -1,0 +1,406 @@
+[
+  {
+    "id": "housing",
+    "name": "Housing",
+    "icon": "home",
+    "color": "#3b82f6",
+    "subCategories": [
+      {
+        "id": "mortgage_rent",
+        "name": "Mortgage / Rent"
+      },
+      {
+        "id": "phone_internet",
+        "name": "Phone / Internet"
+      },
+      {
+        "id": "mobile",
+        "name": "Mobile"
+      },
+      {
+        "id": "electricity",
+        "name": "Electricity"
+      },
+      {
+        "id": "maintenance_housing",
+        "name": "Maintenance - Housing"
+      },
+      {
+        "id": "gas",
+        "name": "Gas"
+      },
+      {
+        "id": "servant",
+        "name": "Servant"
+      },
+      {
+        "id": "supplies_sewage",
+        "name": "Supplies / Sewage Removal"
+      },
+      {
+        "id": "cable",
+        "name": "Cable"
+      },
+      {
+        "id": "others_housing",
+        "name": "Others - Housing"
+      }
+    ]
+  },
+  {
+    "id": "food",
+    "name": "Food",
+    "icon": "restaurant",
+    "color": "#10b981",
+    "subCategories": [
+      {
+        "id": "groceries",
+        "name": "Groceries"
+      },
+      {
+        "id": "dining_out",
+        "name": "Dining Out"
+      },
+      {
+        "id": "coffee_snacks",
+        "name": "Coffee / Snacks"
+      },
+      {
+        "id": "fruits_vegetables",
+        "name": "Fruits & Vegetables"
+      },
+      {
+        "id": "water",
+        "name": "Water"
+      },
+      {
+        "id": "others_food",
+        "name": "Others - Food"
+      },
+      {
+        "id": "instamart",
+        "name": "Instamart"
+      }
+    ]
+  },
+  {
+    "id": "personal_care",
+    "name": "Personal Care",
+    "icon": "favorite",
+    "color": "#ec4899",
+    "subCategories": [
+      {
+        "id": "clothing",
+        "name": "Clothing"
+      },
+      {
+        "id": "health_medical",
+        "name": "Health / Medical"
+      },
+      {
+        "id": "personal_hygiene",
+        "name": "Personal Hygiene"
+      },
+      {
+        "id": "hair_beauty",
+        "name": "Hair / Beauty"
+      },
+      {
+        "id": "health_club",
+        "name": "Health club"
+      },
+      {
+        "id": "others_personal_care",
+        "name": "Others - Personal Care"
+      }
+    ]
+  },
+  {
+    "id": "entertainment",
+    "name": "Entertainment",
+    "icon": "movie",
+    "color": "#8b5cf6",
+    "subCategories": [
+      {
+        "id": "movies_shows",
+        "name": "Movies / Shows"
+      },
+      {
+        "id": "games_hobbies",
+        "name": "Games / Hobbies"
+      },
+      {
+        "id": "books_magazines",
+        "name": "Books / Magazines"
+      },
+      {
+        "id": "sports_fitness",
+        "name": "Sports / Fitness"
+      },
+      {
+        "id": "sporting_events",
+        "name": "Sporting events"
+      },
+      {
+        "id": "live_theater",
+        "name": "Live theater"
+      },
+      {
+        "id": "others_entertainment",
+        "name": "Others - Entertainment"
+      }
+    ]
+  },
+  {
+    "id": "savings",
+    "name": "Savings",
+    "icon": "savings",
+    "color": "#06b6d4",
+    "subCategories": [
+      {
+        "id": "mutual_fund",
+        "name": "Mutual Fund"
+      },
+      {
+        "id": "children_savings",
+        "name": "Children Savings"
+      },
+      {
+        "id": "savings_3",
+        "name": "Savings 3"
+      },
+      {
+        "id": "others_savings",
+        "name": "Others - Savings"
+      }
+    ]
+  },
+  {
+    "id": "miscellaneous",
+    "name": "Miscellaneous",
+    "icon": "category",
+    "color": "#f59e0b",
+    "subCategories": [
+      {
+        "id": "gifts_donations",
+        "name": "Gifts / Donations"
+      },
+      {
+        "id": "subscriptions",
+        "name": "Subscriptions"
+      },
+      {
+        "id": "office_supplies",
+        "name": "Office Supplies"
+      },
+      {
+        "id": "other",
+        "name": "Other"
+      }
+    ]
+  },
+  {
+    "id": "transportation",
+    "name": "Transportation",
+    "icon": "directions_car",
+    "color": "#f97316",
+    "subCategories": [
+      {
+        "id": "fuel",
+        "name": "Fuel"
+      },
+      {
+        "id": "public_transport",
+        "name": "Public Transport"
+      },
+      {
+        "id": "vehicle_maintenance",
+        "name": "Vehicle Maintenance"
+      },
+      {
+        "id": "parking_tolls",
+        "name": "Parking / Tolls"
+      },
+      {
+        "id": "vehicle_payments",
+        "name": "Vehicle Payments"
+      },
+      {
+        "id": "vehicle_1_insurance",
+        "name": "Vehicle 1 Insurance"
+      },
+      {
+        "id": "vehicle_2_insurance",
+        "name": "Vehicle 2 Insurance"
+      },
+      {
+        "id": "petrol_vehicle_1",
+        "name": "Petrol Vehicle 1"
+      },
+      {
+        "id": "petrol_vehicle_2",
+        "name": "Petrol Vehicle 2"
+      },
+      {
+        "id": "bus_taxi_auto",
+        "name": "Bus / Taxi / Auto"
+      },
+      {
+        "id": "others_transportation",
+        "name": "Others - Transportation"
+      }
+    ]
+  },
+  {
+    "id": "insurance",
+    "name": "Insurance",
+    "icon": "security",
+    "color": "#6366f1",
+    "subCategories": [
+      {
+        "id": "life_insurance",
+        "name": "Life Insurance"
+      },
+      {
+        "id": "medical_insurance",
+        "name": "Medical Insurance"
+      },
+      {
+        "id": "home_insurance",
+        "name": "Home Insurance"
+      },
+      {
+        "id": "child_insurance",
+        "name": "Child Insurance"
+      },
+      {
+        "id": "others_insurance",
+        "name": "Others - Insurance"
+      }
+    ]
+  },
+  {
+    "id": "children",
+    "name": "Children",
+    "icon": "child_care",
+    "color": "#84cc16",
+    "subCategories": [
+      {
+        "id": "child_medical",
+        "name": "Child Medical"
+      },
+      {
+        "id": "child_clothing",
+        "name": "Child Clothing"
+      },
+      {
+        "id": "school_tuition",
+        "name": "School tuition"
+      },
+      {
+        "id": "school_supplies",
+        "name": "School supplies"
+      },
+      {
+        "id": "organization_dues",
+        "name": "Organization dues or fees"
+      },
+      {
+        "id": "child_lunch_money",
+        "name": "Child Lunch money"
+      },
+      {
+        "id": "child_care",
+        "name": "Child care"
+      },
+      {
+        "id": "toys_games",
+        "name": "Toys/games"
+      },
+      {
+        "id": "others_children",
+        "name": "Others - Children"
+      }
+    ]
+  },
+  {
+    "id": "loan",
+    "name": "Loan",
+    "icon": "account_balance",
+    "color": "#ef4444",
+    "subCategories": [
+      {
+        "id": "personal_loan",
+        "name": "Personal Loan"
+      },
+      {
+        "id": "educational_loan",
+        "name": "Educational Loan"
+      },
+      {
+        "id": "vehicle_loan",
+        "name": "Vehicle Loan"
+      },
+      {
+        "id": "credit_card_1",
+        "name": "Credit Card 1"
+      },
+      {
+        "id": "credit_card_2",
+        "name": "Credit Card 2"
+      },
+      {
+        "id": "credit_card_3",
+        "name": "Credit Card 3"
+      },
+      {
+        "id": "others_loan",
+        "name": "Others - Loan"
+      }
+    ]
+  },
+  {
+    "id": "tax",
+    "name": "Tax",
+    "icon": "receipt_long",
+    "color": "#eab308",
+    "subCategories": [
+      {
+        "id": "income_tax",
+        "name": "Income Tax"
+      },
+      {
+        "id": "professional_tax",
+        "name": "Professional Tax"
+      },
+      {
+        "id": "tn_labour_fund",
+        "name": "TN Labour Fund Contribution"
+      },
+      {
+        "id": "others_tax",
+        "name": "Others - Tax"
+      }
+    ]
+  },
+  {
+    "id": "donation",
+    "name": "Donation",
+    "icon": "volunteer_activism",
+    "color": "#14b8a6",
+    "subCategories": [
+      {
+        "id": "gifts_donation_1",
+        "name": "Gifts / Donation / Charity - 1"
+      },
+      {
+        "id": "gifts_donation_2",
+        "name": "Gifts / Donation / Charity - 2"
+      },
+      {
+        "id": "others_gifts",
+        "name": "Others - Gifts"
+      }
+    ]
+  }
+]

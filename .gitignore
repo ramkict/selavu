@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+next-env.d.ts
+
+# generated Prisma client
+src/generated/
+
+# local database and backups (never commit financial data)
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+backups/
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+*.tsbuildinfo
+coverage/
+.DS_Store
+npm-debug.log*
+node_modules

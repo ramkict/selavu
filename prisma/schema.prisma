@@ -1,0 +1,222 @@
+// Accounts Manager - Phase 1 schema.
+// Enum-like columns are stored as TEXT and constrained with CHECK clauses in the
+// migration (SQLite has no enums). Money is integer paise stored as BigInt.
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../src/generated/prisma"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model AppSettings {
+  id                 Int      @id @default(1)
+  currency           String   @default("INR")
+  currencyScale      Int      @default(2)
+  locale             String   @default("en-IN")
+  timezone           String   @default("Asia/Kolkata")
+  trackingStartMonth String?
+  dataRevision       Int      @default(0)
+  version            Int      @default(1)
+  updatedAt          DateTime @updatedAt
+}
+
+model ConfiguredMonth {
+  month     String   @id
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id             String        @id
+  name           String
+  normalizedName String        @unique
+  icon           String
+  color          String
+  isSystem       Boolean       @default(false)
+  archivedAt     DateTime?
+  version        Int           @default(1)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  subcategories  Subcategory[]
+}
+
+model Subcategory {
+  id               String    @id
+  parentCategoryId String
+  name             String
+  normalizedName   String
+  isSystem         Boolean   @default(false)
+  archivedAt       DateTime?
+  version          Int       @default(1)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  parent           Category  @relation(fields: [parentCategoryId], references: [id], onDelete: Restrict)
+
+  transactions  Transaction[]
+  budgetDetails BudgetDetail[]
+
+  @@unique([parentCategoryId, normalizedName])
+}
+
+model PaymentMode {
+  id             String        @id
+  name           String
+  normalizedName String        @unique
+  isSystem       Boolean       @default(false)
+  active         Boolean       @default(true)
+  version        Int           @default(1)
+  createdAt      DateTime      @default(now())
+  transactions   Transaction[]
+}
+
+model AccountMaster {
+  id                  String    @id @default(uuid())
+  name                String
+  normalizedName      String    @unique
+  accountType         String
+  isSystem            Boolean   @default(false)
+  openingBalanceMinor BigInt    @default(0)
+  openingDate         String
+  currentBalanceMinor BigInt    @default(0)
+  balanceAsOf         String?
+  archivedAt          DateTime?
+  version             Int       @default(1)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  runningAccounts RunningAccount[]
+  postings        TransactionPosting[]
+  txnSource       Transaction[]        @relation("TxnSource")
+  txnDestination  Transaction[]        @relation("TxnDestination")
+  budgetDetails   BudgetDetail[]
+}
+
+model RunningAccount {
+  id                  String        @id @default(uuid())
+  accountId           String
+  month               String
+  openingBalanceMinor BigInt?
+  movementMinor       BigInt        @default(0)
+  closingBalanceMinor BigInt?
+  asOfDate            String?
+  projectionRevision  Int           @default(0)
+  account             AccountMaster @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@unique([accountId, month])
+}
+
+model BudgetMaster {
+  id                             String         @id @default(uuid())
+  month                          String         @unique
+  totalProjectedExpenditureMinor BigInt         @default(0)
+  currentSpendingMinor           BigInt         @default(0)
+  balanceProvisioningMinor       BigInt         @default(0)
+  settlementPlannedMinor         BigInt         @default(0)
+  settlementUsedMinor            BigInt         @default(0)
+  version                        Int            @default(1)
+  projectionRevision             Int            @default(0)
+  createdAt                      DateTime       @default(now())
+  updatedAt                      DateTime       @updatedAt
+  details                        BudgetDetail[]
+}
+
+model BudgetDetail {
+  id                       String         @id @default(uuid())
+  budgetMasterId           String
+  categoryId               String
+  subcategoryId            String
+  planningClass            String
+  budgetAmountMinor        BigInt         @default(0)
+  spendMinor               BigInt         @default(0)
+  balanceMinor             BigInt         @default(0)
+  alertThresholdBps        Int            @default(8000)
+  preferredSourceAccountId String?
+  version                  Int            @default(1)
+  budgetMaster             BudgetMaster   @relation(fields: [budgetMasterId], references: [id], onDelete: Cascade)
+  subcategory              Subcategory    @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  preferredSourceAccount   AccountMaster? @relation(fields: [preferredSourceAccountId], references: [id], onDelete: SetNull)
+  transactions             Transaction[]
+
+  @@unique([budgetMasterId, categoryId, subcategoryId])
+}
+
+model Transaction {
+  id                   String   @id @default(uuid())
+  type                 String
+  financialKind        String?
+  date                 String
+  description          String
+  notes                String?
+  amountMinor          BigInt
+  sourceAccountId      String
+  destinationAccountId String
+  paymentModeId        String?
+  expenseLocation      String?
+  categoryId           String
+  subcategoryId        String
+  budgetDetailId       String?
+  budgetImpactMinor    BigInt   @default(0)
+  incomeType           String?
+  incomeSourceLabel    String?
+  recurring            Boolean  @default(false)
+  version              Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  sourceAccount      AccountMaster        @relation("TxnSource", fields: [sourceAccountId], references: [id], onDelete: Restrict)
+  destinationAccount AccountMaster        @relation("TxnDestination", fields: [destinationAccountId], references: [id], onDelete: Restrict)
+  paymentMode        PaymentMode?         @relation(fields: [paymentModeId], references: [id], onDelete: Restrict)
+  subcategory        Subcategory          @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  budgetDetail       BudgetDetail?        @relation(fields: [budgetDetailId], references: [id], onDelete: SetNull)
+  postings           TransactionPosting[]
+
+  @@index([date])
+  @@index([type, financialKind])
+  @@index([categoryId, subcategoryId])
+  @@index([sourceAccountId])
+  @@index([destinationAccountId])
+  @@index([budgetDetailId])
+  @@index([expenseLocation, date])
+}
+
+model TransactionPosting {
+  id            String        @id @default(uuid())
+  transactionId String
+  accountId     String
+  deltaMinor    BigInt
+  component     String        @default("AMOUNT")
+  transaction   Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account       AccountMaster @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@unique([transactionId, accountId, component])
+  @@index([accountId])
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String
+  before     String?
+  after      String?
+  reason     String?
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(uuid())
+  routeScope   String
+  key          String
+  requestHash  String
+  status       Int
+  responseBody String
+  expiresAt    DateTime
+
+  @@unique([routeScope, key])
+}
