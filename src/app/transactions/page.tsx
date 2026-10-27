@@ -43,7 +43,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const existing = data.list.items.find((item) => item.id === params.edit);
   const sources = data.accounts.filter((a) => a.accountType !== "EXTERNAL_EXPENSE" && (!a.archivedAt || a.id === existing?.source.id));
   const destinations = data.accounts.filter((a) => a.accountType !== "EXTERNAL_INCOME" && (!a.archivedAt || a.id === existing?.destination.id));
-  const categories = data.categories.filter((c) => !c.isSystem).map((c) => ({
+  const categories = data.categories.filter((c) => !c.isSystem && (!c.archivedAt || c.id === existing?.categoryId)).map((c) => ({
     id: c.id,
     name: c.name,
     subcategories: c.subcategories.filter((s) => !s.isSystem && (!s.archivedAt || s.id === existing?.subcategory.id)).map((s) => ({ id: s.id, name: s.name })),
