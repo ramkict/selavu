@@ -4,14 +4,48 @@ Single-user, local-first accounts and budget manager. Next.js 16 (App Router, Ty
 
 ## Setup
 
-Requirements: Node.js 22.12+ (tested on Node 26), npm.
+### Local setup for a new user
+
+Requirements: Node.js 22.12+ (tested on Node 26), npm, and a macOS or Linux shell (use WSL on Windows).
+
+1. Get the workspace and open the `selavu` folder (the app lives there, not at the workspace root):
+
+   ```bash
+   cd selavu
+   ```
+
+2. Run the setup script. It installs dependencies, creates `.env`, creates `data/`, generates the Prisma client, applies migrations, and seeds the catalog:
+
+   ```bash
+   npm run setup
+   ```
+
+3. Start the app and open <http://127.0.0.1:3000>:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Optional checks: `npm run lint`, `npm run typecheck`, `npm test`.
+
+Notes:
+
+- `data/`, `.env`, and `src/generated/` are not committed, so every user gets their own empty local database. Do not share `data/accounts.db`; it holds financial data.
+- Months for 2026 are preconfigured. Add later months under **Admin → Months**.
+- If port 3000 is busy, run `npx next dev -H 127.0.0.1 -p 3001`.
+- Reset your own database by stopping the app and deleting `data/accounts.db*`, then re-running `npm run setup`.
+- `npm run db:catalog:migrate` is only for a database created before the household catalog; a fresh setup does not need it.
+- The `prototype` folder is static HTML. Open `prototype/index.html` in a browser; it needs no install.
+
+### Manual setup
 
 ```bash
 npm install
 cp .env.example .env           # optional; default DB is ./data/accounts.db
+mkdir -p data
+npm run db:generate            # generate the Prisma client (not committed)
 npm run db:migrate             # apply migrations (prisma migrate deploy)
 npm run db:seed                # seed the 13/68 household catalog + system records (insert-only)
-npm run db:catalog:migrate     # migrate existing built-in category history and budgets once
 npm run dev                    # http://127.0.0.1:3000
 ```
 
@@ -21,6 +55,7 @@ Production-style run: `npm run build && npm run start` (binds 127.0.0.1:3000).
 
 | Command | Purpose |
 | --- | --- |
+| `npm run setup` | First-time setup for a fresh clone (idempotent) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript) |
 | `npm test` | Vitest; every suite creates a fresh migrated temp SQLite DB |

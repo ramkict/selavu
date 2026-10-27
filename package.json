@@ -16,7 +16,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "tsx scripts/seed.ts",
-    "db:catalog:migrate": "tsx scripts/migrate-household-catalog.ts"
+    "db:catalog:migrate": "tsx scripts/migrate-household-catalog.ts",
+    "setup": "bash scripts/setup.sh"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",
