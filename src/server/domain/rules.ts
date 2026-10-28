@@ -23,14 +23,14 @@ export const isLiability = (type: string) => (LIABILITY_TYPES as readonly string
 /** External endpoints (Income, Expense) are excluded from owned balances and net worth. */
 export const isExternal = (type: string) => (EXTERNAL_TYPES as readonly string[]).includes(type);
 
-export const FINANCIAL_KINDS = ["INCOME", "TRANSFER", "ATM_WITHDRAWAL", "CARD_PAYMENT", "BORROWING"] as const;
+export const FINANCIAL_KINDS = ["INCOME", "TRANSFER", "ATM_WITHDRAWAL", "CARD_PAYMENT", "BORROWING", "INTEREST_ACCRUAL", "LOAN_PAYMENT"] as const;
 export type FinancialKind = (typeof FINANCIAL_KINDS)[number];
 export const EXPENSE_LOCATIONS = ["CHE", "HYD"] as const;
 export type ExpenseLocation = (typeof EXPENSE_LOCATIONS)[number];
 export const DEFAULT_EXPENSE_LOCATION: ExpenseLocation = "CHE";
 export const CARD_SETTLEMENT_CATEGORY_ID = "sys_card_settlement";
 
-export const PLANNING_CLASSES = ["EXPENSE", "CARD_SETTLEMENT"] as const;
+export const PLANNING_CLASSES = ["EXPENSE", "CARD_SETTLEMENT", "SAVING"] as const;
 export type PlanningClass = (typeof PLANNING_CLASSES)[number];
 
 export const EXPENSE_LOCATION_LABELS: Record<ExpenseLocation, string> = { CHE: "Chennai", HYD: "Hyderabad" };
@@ -69,6 +69,12 @@ export function endpointRuleViolation(kind: FinancialKind | "EXPENSE", src: Endp
     case "BORROWING":
       if (!["CREDIT_CARD", "LOAN"].includes(s) || !isAssetType(d)) return "Borrowing draws from a Credit Card or Loan into an asset account.";
       return null;
+    case "INTEREST_ACCRUAL":
+      if (s !== "LOAN" || d !== "EXTERNAL_EXPENSE") return "Interest accrual goes from a Loan to Expenses.";
+      return null;
+    case "LOAN_PAYMENT":
+      if (!["SAVINGS", "CASH"].includes(s) || d !== "LOAN") return "Loan payments go from Savings or Cash In Hand to a Loan.";
+      return null;
   }
 }
 
@@ -86,9 +92,11 @@ export function buildPostings(src: { id: string; accountType: string }, dst: { i
 }
 
 /** Budget lane for a transaction, or null when it does not consume a provision. */
-export function requiredPlanningClass(type: "EXPENSE" | "FINANCIAL", kind: FinancialKind | null): PlanningClass | null {
+export function requiredPlanningClass(type: "EXPENSE" | "FINANCIAL", kind: FinancialKind | null, categoryId?: string): PlanningClass | null {
   if (type === "EXPENSE") return "EXPENSE";
   if (kind === "CARD_PAYMENT") return "CARD_SETTLEMENT";
+  if (kind === "TRANSFER" && categoryId === "savings_investments") return "SAVING";
+  if (kind === "LOAN_PAYMENT") return "EXPENSE";
   return null;
 }
 

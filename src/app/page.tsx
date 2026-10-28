@@ -61,7 +61,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div className="card budget">
             <div className="label">Total provisioned</div>
-            <div className="value">{m.totalProvisioned ? m.totalProvisioned.formatted : "No budget"}</div>
+            <div className="value">{data.budget ? formatMinor(BigInt(data.budget.totals.allProvisionedMinor)) : "No budget"}</div>
           </div>
           <div className="card expense">
             <div className="label">Expenses</div>
@@ -79,6 +79,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <div className="label">Net worth as of {data.netWorth.asOf}</div>
             <div className="value">{data.netWorth.formatted}</div>
           </div>
+          {data.budget ? <div className="card plan"><div className="label">{BigInt(data.budget.totals.incomeBalanceMinor) < 0n ? "Income shortfall" : "Income surplus"}</div><div className="value">{formatMinor(BigInt(data.budget.totals.incomeBalanceMinor) < 0n ? -BigInt(data.budget.totals.incomeBalanceMinor) : BigInt(data.budget.totals.incomeBalanceMinor))}</div></div> : null}
         </div>
         <p className="muted">
           <Link href={`/budget?month=${data.month}`}>Manage budget</Link> · <Link href={`/transactions?month=${data.month}`}>View transactions</Link>

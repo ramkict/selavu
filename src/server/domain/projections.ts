@@ -78,7 +78,7 @@ export async function refreshBudgetMonth(tx: Tx, month: string) {
   const spendByDetail = new Map<string, bigint>();
   let currentSpending = 0n;
   for (const t of txns) {
-    const required = requiredPlanningClass(t.type as "EXPENSE" | "FINANCIAL", (t.financialKind ?? null) as FinancialKind | null);
+    const required = requiredPlanningClass(t.type as "EXPENSE" | "FINANCIAL", (t.financialKind ?? null) as FinancialKind | null, t.categoryId);
     const detail = master && required
       ? master.details.find((d) => d.categoryId === t.categoryId && d.subcategoryId === t.subcategoryId && d.planningClass === required)
       : undefined;

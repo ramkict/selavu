@@ -13,6 +13,7 @@ import {
   type ExpenseLocation,
   type FinancialKind,
   isExternal,
+  requiredPlanningClass,
 } from "./rules";
 import { CARD_SETTLEMENT_CATEGORY } from "../catalog/catalog";
 
@@ -68,6 +69,15 @@ async function validateDraft(tx: Tx, draft: TransactionDraft, ctx: CommandContex
     const classificationChanged = !existing || existing.categoryId !== draft.categoryId || existing.subcategoryId !== draft.subcategoryId;
     if (classificationChanged && (subcategory.archivedAt || subcategory.parent.archivedAt)) add("subcategoryId", "Archived classifications cannot be assigned.");
     if (draft.type === "EXPENSE" && subcategory.isSystem) add("subcategoryId", "Choose a spending subcategory for an expense.");
+    if (draft.categoryId === "savings_investments" && draft.financialKind !== "TRANSFER") {
+      add("categoryId", "Savings provisions are funded by transfers, not expenses.");
+    }
+    if (draft.financialKind === "LOAN_PAYMENT" && draft.subcategoryId !== "home_loan_emi") {
+      add("subcategoryId", "Choose the Home-loan budget line for a loan payment.");
+    }
+    if (draft.financialKind === "INTEREST_ACCRUAL" && draft.subcategoryId !== "sys_transfer") {
+      add("subcategoryId", "Interest accrual is classified under Accounts / Transfer.");
+    }
     if (draft.financialKind === "CARD_PAYMENT" && draft.categoryId !== CARD_SETTLEMENT_CATEGORY.id) {
       add("categoryId", "Choose a card settlement line for this payment.");
     }
@@ -120,7 +130,7 @@ async function loadTransaction(tx: Tx, id: string) {
 }
 
 export function serializeTransaction(t: TransactionRecord) {
-  const budgetMatch = t.type !== "EXPENSE" && t.financialKind !== "CARD_PAYMENT" ? "NOT_APPLICABLE" : t.budgetDetailId ? "MATCHED" : "UNBUDGETED";
+  const budgetMatch = !requiredPlanningClass(t.type as "EXPENSE" | "FINANCIAL", t.financialKind as FinancialKind | null, t.categoryId) ? "NOT_APPLICABLE" : t.budgetDetailId ? "MATCHED" : "UNBUDGETED";
   return {
     id: t.id,
     type: t.type,

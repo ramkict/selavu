@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { conflict, notFound, semantic, staleVersion } from "../lib/errors";
 import { formatMinor } from "../lib/money";
-import { assertMonth } from "../lib/calendar";
+import { assertMonth, monthBounds } from "../lib/calendar";
 import { audit, bumpDataRevision, refreshBudgetMonth, type Tx } from "./projections";
 import { PLANNING_CLASSES, type PlanningClass } from "./rules";
 import { CARD_SETTLEMENT_CATEGORY, defaultPlanningClass } from "../catalog/catalog";
@@ -63,14 +63,27 @@ async function loadBudget(tx: Tx, where: { id: string } | { month: string }) {
   return tx.budgetMaster.findUnique({ where, include: budgetInclude });
 }
 
-export function serializeBudget(b: BudgetRecord) {
+async function incomeForMonth(tx: Tx, month: string) {
+  const { start, endExclusive } = monthBounds(month);
+  const income = await tx.transaction.aggregate({ where: { date: { gte: start, lt: endExclusive }, type: "FINANCIAL", financialKind: "INCOME" }, _sum: { amountMinor: true } });
+  return income._sum.amountMinor ?? 0n;
+}
+
+export function serializeBudget(b: BudgetRecord, incomeReceived = 0n) {
   const used = b.details.filter((d) => d.planningClass !== "CARD_SETTLEMENT").reduce((s, d) => s + d.spendMinor, 0n);
+  const savings = b.details.filter((detail) => detail.planningClass === "SAVING");
+  const allProvisioned = b.totalProjectedExpenditureMinor + b.settlementPlannedMinor;
   return {
     id: b.id,
     month: b.month,
     version: b.version,
     projectionRevision: b.projectionRevision,
     totals: {
+      incomeReceivedMinor: incomeReceived.toString(),
+      allProvisionedMinor: allProvisioned.toString(),
+      incomeBalanceMinor: (incomeReceived - allProvisioned).toString(),
+      savingsPlannedMinor: savings.reduce((sum, detail) => sum + detail.budgetAmountMinor, 0n).toString(),
+      savingsUsedMinor: savings.reduce((sum, detail) => sum + detail.spendMinor, 0n).toString(),
       totalProvisionedMinor: b.totalProjectedExpenditureMinor.toString(),
       budgetUsedMinor: used.toString(),
       remainingMinor: b.balanceProvisioningMinor.toString(),
@@ -98,7 +111,7 @@ export function serializeBudget(b: BudgetRecord) {
         balanceMinor: d.balanceMinor.toString(),
         alertThresholdBps: d.alertThresholdBps,
         utilizationBps,
-        alert: utilizationBps !== null && utilizationBps >= d.alertThresholdBps,
+        alert: d.planningClass !== "SAVING" && utilizationBps !== null && utilizationBps >= d.alertThresholdBps,
         version: d.version,
       };
     }),
@@ -108,13 +121,13 @@ export function serializeBudget(b: BudgetRecord) {
 export async function getBudgetByMonth(tx: Tx, month: string) {
   assertMonth(month);
   const b = await loadBudget(tx, { month });
-  return b ? serializeBudget(b) : null;
+  return b ? serializeBudget(b, await incomeForMonth(tx, month)) : null;
 }
 
 export async function getBudgetById(tx: Tx, id: string) {
   const b = await loadBudget(tx, { id });
   if (!b) throw notFound("Budget");
-  return serializeBudget(b);
+  return serializeBudget(b, await incomeForMonth(tx, b.month));
 }
 
 export async function createBudget(tx: Tx, input: { month: string; lines: BudgetLineInput[] }, ctx: CommandContext) {
@@ -143,7 +156,7 @@ export async function createBudget(tx: Tx, input: { month: string; lines: Budget
   await bumpDataRevision(tx);
   const created = (await loadBudget(tx, { id: master.id }))!;
   await audit(tx, { action: "CREATE", entityType: "BudgetMaster", entityId: master.id, after: { month: input.month, lines: input.lines.length }, requestId: ctx.requestId });
-  return serializeBudget(created);
+  return serializeBudget(created, await incomeForMonth(tx, created.month));
 }
 
 export async function updateBudget(tx: Tx, id: string, expectedVersion: number, input: { lines: BudgetLineInput[] }, ctx: CommandContext) {
@@ -167,7 +180,7 @@ export async function updateBudget(tx: Tx, id: string, expectedVersion: number, 
   await bumpDataRevision(tx);
   const after = (await loadBudget(tx, { id }))!;
   await audit(tx, { action: "UPDATE", entityType: "BudgetMaster", entityId: id, before: serializeBudget(before).totals, after: serializeBudget(after).totals, requestId: ctx.requestId });
-  return serializeBudget(after);
+  return serializeBudget(after, await incomeForMonth(tx, after.month));
 }
 
 /** Deletes the month's plan. Transaction facts, postings, and balances are preserved; only detail links are cleared. */

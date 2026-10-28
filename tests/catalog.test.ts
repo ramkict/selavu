@@ -1,7 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
+import { createDb } from "@/server/db";
 import type { Db } from "@/server/db";
 import { CATALOG, CARD_SETTLEMENT_CATEGORY, seedCatalog } from "@/server/catalog/catalog";
 import { freshDb } from "./helpers";
+import { addBudget, addTransaction, expenseInput, openAccount } from "./fixtures";
 
 describe("catalog seed", () => {
   let db: Db;
@@ -9,11 +13,11 @@ describe("catalog seed", () => {
     db = await freshDb();
   });
 
-  it("seeds the 13 household categories and 68 subcategories with stable IDs", async () => {
+  it("seeds household and savings categories with stable IDs", async () => {
     const categories = await db.category.findMany({ where: { isSystem: false }, include: { subcategories: { where: { isSystem: false } } } });
-    expect(CATALOG).toHaveLength(13);
-    expect(categories).toHaveLength(13);
-    expect(categories.reduce((n, c) => n + c.subcategories.length, 0)).toBe(68);
+    expect(CATALOG).toHaveLength(14);
+    expect(categories).toHaveLength(14);
+    expect(categories.reduce((n, c) => n + c.subcategories.length, 0)).toBe(71);
 
     for (const entry of CATALOG) {
       const row = categories.find((c) => c.id === entry.id);
@@ -50,5 +54,34 @@ describe("catalog seed", () => {
     const result = await seedCatalog(db);
     expect(result).toEqual({ insertedCategories: 0, insertedSubcategories: 0 });
     expect((await db.category.findUniqueOrThrow({ where: { id: "food" } })).name).toBe("Groceries & Dining");
+  });
+
+  it("preserves populated financial records when upgrading the transaction constraint", async () => {
+    const isolated = await freshDb();
+    const bank = await openAccount(isolated, "Preserved bank", "SAVINGS", "1000000");
+    await addBudget(isolated, "2026-10", { provisions: 100000n });
+    await addTransaction(isolated, expenseInput({ sourceAccountId: bank.id, amountMinor: 10000n }));
+    const snapshot = async (client: Db) => ({
+      accounts: await client.accountMaster.findMany({ orderBy: { id: "asc" } }),
+      transactions: await client.transaction.findMany({ orderBy: { id: "asc" } }),
+      postings: await client.transactionPosting.findMany({ orderBy: { id: "asc" } }),
+      budgets: await client.budgetMaster.findMany({ orderBy: { id: "asc" } }),
+      details: await client.budgetDetail.findMany({ orderBy: { id: "asc" } }),
+      months: await client.runningAccount.findMany({ orderBy: { id: "asc" } }),
+      audits: await client.auditEvent.findMany({ orderBy: { id: "asc" } }),
+    });
+    const before = await snapshot(isolated);
+    const files = await isolated.$queryRawUnsafe<{ name: string; file: string }[]>("PRAGMA database_list");
+    const filename = files.find((entry) => entry.name === "main")!.file;
+    await isolated.$disconnect();
+    const sqlite = new DatabaseSync(filename);
+    const migration = readFileSync(new URL("../prisma/migrations/20261028180000_savings_and_loan_interest/migration.sql", import.meta.url), "utf8");
+    sqlite.exec(migration.replace(", 'INTEREST_ACCRUAL', 'LOAN_PAYMENT'", ""));
+    sqlite.exec(migration);
+    expect(sqlite.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    sqlite.close();
+    const reopened = await createDb(`file:${filename}`);
+    expect(await snapshot(reopened)).toEqual(before);
+    await reopened.$disconnect();
   });
 });

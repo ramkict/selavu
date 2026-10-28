@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/server/db";
 import { createBudget, deleteBudget, getBudgetByMonth, updateBudget } from "@/server/domain/budgets";
-import { updateTransaction } from "@/server/domain/transactions";
+import { deleteTransaction, updateTransaction } from "@/server/domain/transactions";
+import { getDashboard } from "@/server/domain/dashboard";
 import { freshDb, ctx } from "./helpers";
 import { addBudget, addTransaction, balanceOf, expenseInput, fullBudgetLines, openAccount } from "./fixtures";
 
@@ -143,5 +144,60 @@ describe("shared monthly budget", () => {
     expect(provisions.spendMinor).toBe("150000");
     expect(provisions.utilizationBps).toBeNull();
     expect(updated.totals.totalProvisionedMinor).toBe("0");
+  });
+
+  it("provisions savings and compares all plans with income without treating transfers as spending", async () => {
+    const isolated = await freshDb();
+    const bank = await openAccount(isolated, "Salary bank", "SAVINGS");
+    const fund = await openAccount(isolated, "SIP", "MUTUAL_FUND");
+    await addBudget(isolated, "2026-10", { mutual_funds: 500000n, kids_savings: 200000n, fixed_deposits: 300000n, provisions: 100000n, credit_card_1: 50000n });
+    await addTransaction(isolated, { type: "FINANCIAL", financialKind: "INCOME", date: "2026-10-05", description: "Salary", amountMinor: 1200000n, sourceAccountId: "sys_income", destinationAccountId: bank.id, categoryId: "sys_accounts", subcategoryId: "sys_transfer" });
+    const contribution = await addTransaction(isolated, { type: "FINANCIAL", financialKind: "TRANSFER", date: "2026-10-06", description: "SIP contribution", amountMinor: 300000n, sourceAccountId: bank.id, destinationAccountId: fund.id, categoryId: "savings_investments", subcategoryId: "mutual_funds" });
+    expect(contribution.budgetMatch).toBe("MATCHED");
+    const budget = (await isolated.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!;
+    expect(budget.totals).toMatchObject({ incomeReceivedMinor: "1200000", allProvisionedMinor: "1150000", incomeBalanceMinor: "50000", savingsPlannedMinor: "1000000", savingsUsedMinor: "300000", currentSpendingMinor: "0" });
+    const updatedContribution = await isolated.$transaction((tx) => updateTransaction(tx, contribution.id, contribution.version, { type: "FINANCIAL", financialKind: "TRANSFER", date: "2026-10-06", description: "Adjusted SIP", amountMinor: 200000n, sourceAccountId: bank.id, destinationAccountId: fund.id, categoryId: "savings_investments", subcategoryId: "mutual_funds" }, ctx));
+    expect((await isolated.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!.totals.savingsUsedMinor).toBe("200000");
+    await isolated.$transaction((tx) => deleteTransaction(tx, updatedContribution.id, updatedContribution.version, ctx));
+    expect((await isolated.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!.totals.savingsUsedMinor).toBe("0");
+    expect(await balanceOf(isolated, fund.id)).toBe(0n);
+    await addTransaction(isolated, { type: "FINANCIAL", financialKind: "TRANSFER", date: "2026-10-06", description: "General transfer", amountMinor: 10000n, sourceAccountId: bank.id, destinationAccountId: fund.id, categoryId: "sys_accounts", subcategoryId: "sys_transfer" });
+    expect((await isolated.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!.totals.savingsUsedMinor).toBe("0");
+    const lines = await fullBudgetLines(isolated, { mutual_funds: 1500000n });
+    const deficit = await isolated.$transaction((tx) => updateBudget(tx, budget.id, budget.version, { lines }, ctx));
+    expect(deficit.totals.incomeBalanceMinor).toBe("-300000");
+    await isolated.subcategory.create({ data: { id: "late_expense", parentCategoryId: "food", name: "Late expense", normalizedName: "late expense" } });
+    await addTransaction(isolated, expenseInput({ sourceAccountId: bank.id, amountMinor: 100n, categoryId: "food", subcategoryId: "late_expense" }));
+    const dashboard = await isolated.$transaction((tx) => getDashboard(tx, "2026-10"));
+    expect(dashboard.alerts.some((alert) => alert.message === "Some expenses are unbudgeted in this month.")).toBe(true);
+    await expect(addTransaction(isolated, expenseInput({ sourceAccountId: bank.id, amountMinor: 100n, categoryId: "savings_investments", subcategoryId: "mutual_funds" }))).rejects.toMatchObject({ status: 422 });
+    await isolated.$disconnect();
+  });
+
+  it("accrues loan interest without using cash and budgets repayments only once", async () => {
+    const isolated = await freshDb();
+    const bank = await openAccount(isolated, "Loan bank", "SAVINGS", "1000000");
+    const loan = await openAccount(isolated, "Home Loan", "LOAN", "10000000");
+    await addBudget(isolated, "2026-10", { home_loan_emi: 500000n });
+    const accrual = await addTransaction(isolated, { type: "FINANCIAL", financialKind: "INTEREST_ACCRUAL", date: "2026-10-05", description: "Monthly interest", amountMinor: 100000n, sourceAccountId: loan.id, destinationAccountId: "sys_expense", categoryId: "sys_accounts", subcategoryId: "sys_transfer" });
+    expect(accrual.budgetMatch).toBe("NOT_APPLICABLE");
+    expect(await balanceOf(isolated, loan.id)).toBe(10100000n);
+    expect(await balanceOf(isolated, bank.id)).toBe(1000000n);
+    const repayment = await addTransaction(isolated, { type: "FINANCIAL", financialKind: "LOAN_PAYMENT", date: "2026-10-06", description: "Home loan instalment", amountMinor: 500000n, sourceAccountId: bank.id, destinationAccountId: loan.id, categoryId: "housing", subcategoryId: "home_loan_emi" });
+    expect(repayment.budgetMatch).toBe("MATCHED");
+    expect(await balanceOf(isolated, loan.id)).toBe(9600000n);
+    expect(await balanceOf(isolated, bank.id)).toBe(500000n);
+    const budget = (await isolated.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!;
+    expect(budget.totals.budgetUsedMinor).toBe("500000");
+    expect(budget.totals.currentSpendingMinor).toBe("0");
+    await isolated.$transaction((tx) => deleteTransaction(tx, accrual.id, accrual.version, ctx));
+    expect(await balanceOf(isolated, loan.id)).toBe(9500000n);
+    expect(await balanceOf(isolated, bank.id)).toBe(500000n);
+    await isolated.$transaction((tx) => deleteTransaction(tx, repayment.id, repayment.version, ctx));
+    expect(await balanceOf(isolated, loan.id)).toBe(10000000n);
+    expect(await balanceOf(isolated, bank.id)).toBe(1000000n);
+    expect((await isolated.$transaction((tx) => getBudgetByMonth(tx, "2026-10")))!.totals.budgetUsedMinor).toBe("0");
+    await expect(addTransaction(isolated, { type: "FINANCIAL", financialKind: "INTEREST_ACCRUAL", date: "2026-10-05", description: "Invalid interest", amountMinor: 100n, sourceAccountId: bank.id, destinationAccountId: "sys_expense", categoryId: "sys_accounts", subcategoryId: "sys_transfer" })).rejects.toMatchObject({ status: 422 });
+    await isolated.$disconnect();
   });
 });

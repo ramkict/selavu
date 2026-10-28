@@ -8,6 +8,7 @@ import { ApiError, apiRequest, newIdempotencyKey, type FieldErrors } from "./api
 const BUDGET_LANES = [
   { value: "EXPENSE", label: "Regular spending" },
   { value: "CARD_SETTLEMENT", label: "Credit-card settlement" },
+  { value: "SAVING", label: "Savings and investments" },
 ] as const;
 
 export type BudgetCategory = {

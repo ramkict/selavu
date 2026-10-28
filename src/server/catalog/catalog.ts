@@ -5,7 +5,7 @@ import { todayIn } from "../lib/calendar";
 import { refreshAccounts } from "../domain/projections";
 import { CARD_SETTLEMENT_CATEGORY_ID } from "../domain/rules";
 
-export type PlanningClass = "EXPENSE" | "CARD_SETTLEMENT";
+export type PlanningClass = "EXPENSE" | "CARD_SETTLEMENT" | "SAVING";
 
 type CatalogSub = { id: string; name: string };
 type CatalogCategory = { id: string; name: string; icon: string; color: string; subCategories: CatalogSub[] };
@@ -47,6 +47,7 @@ export const SYSTEM_ACCOUNTS = [
  */
 export function defaultPlanningClass(categoryId: string, subcategoryId: string): PlanningClass {
   if (categoryId === CARD_SETTLEMENT_CATEGORY.id && subcategoryId.startsWith("credit_card_")) return "CARD_SETTLEMENT";
+  if (categoryId === "savings_investments") return "SAVING";
   return "EXPENSE";
 }
 

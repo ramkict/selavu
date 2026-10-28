@@ -1,5 +1,16 @@
 [
   {
+    "id": "savings_investments",
+    "name": "Savings and Investments",
+    "icon": "piggy-bank",
+    "color": "#087f77",
+    "subCategories": [
+      { "id": "mutual_funds", "name": "Mutual Funds" },
+      { "id": "kids_savings", "name": "Kids Savings Account" },
+      { "id": "fixed_deposits", "name": "Fixed Deposit" }
+    ]
+  },
+  {
     "id": "housing",
     "name": "Home and Household Operations",
     "icon": "house",

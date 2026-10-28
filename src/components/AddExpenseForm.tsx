@@ -52,10 +52,17 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
     existing?.financialKind === "CARD_PAYMENT" ? existing.subcategory.id : settlementOptions[0]?.id ?? "",
   );
   const expense = kind === "EXPENSE";
+  const savingsCategories = categories.filter((category) => category.id === "savings_investments");
+  const spendingCategories = categories.filter((category) => category.id !== "savings_investments");
+  const classified = expense || kind === "TRANSFER";
+  const availableCategories = expense ? spendingCategories : kind === "TRANSFER" ? savingsCategories : categories;
+  const selectedCategory = kind === "TRANSFER" ? (categoryId === "savings_investments" ? categoryId : "") : availableCategories.some((category) => category.id === categoryId) ? categoryId : availableCategories[0]?.id ?? "";
+  const selectedSubs = selectedCategory === categoryId ? subs : availableCategories.find((category) => category.id === selectedCategory)?.subcategories ?? [];
   const sources = sourceAccounts.filter((a) => {
     const allowed = kind === "INCOME" ? a.accountType === "EXTERNAL_INCOME"
       : kind === "ATM_WITHDRAWAL" ? a.accountType === "SAVINGS"
-        : kind === "CARD_PAYMENT" ? ["SAVINGS", "CASH"].includes(a.accountType)
+        : kind === "INTEREST_ACCRUAL" ? a.accountType === "LOAN"
+        : kind === "CARD_PAYMENT" || kind === "LOAN_PAYMENT" ? ["SAVINGS", "CASH"].includes(a.accountType)
           : kind === "TRANSFER" ? ["SAVINGS", "CASH", "FD", "MUTUAL_FUND"].includes(a.accountType)
             : kind === "BORROWING" ? ["CREDIT_CARD", "LOAN"].includes(a.accountType)
               : ["SAVINGS", "CASH", "CREDIT_CARD"].includes(a.accountType);
@@ -64,7 +71,8 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
   const [sourceId, setSourceId] = useState(existing?.source.id ?? "");
   const selectedSource = sources.some((a) => a.id === sourceId) ? sourceId : sources[0]?.id ?? "";
   const destinations = destinationAccounts.filter((a) => {
-    const allowed = expense ? a.accountType === "EXTERNAL_EXPENSE"
+    const allowed = expense || kind === "INTEREST_ACCRUAL" ? a.accountType === "EXTERNAL_EXPENSE"
+      : kind === "LOAN_PAYMENT" ? a.accountType === "LOAN"
       : kind === "INCOME" ? ["SAVINGS", "CASH"].includes(a.accountType)
         : kind === "ATM_WITHDRAWAL" ? a.accountType === "CASH"
           : kind === "CARD_PAYMENT" ? a.accountType === "CREDIT_CARD"
@@ -95,8 +103,8 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
       destinationAccountId: String(data.get("destinationAccountId") ?? ""),
       paymentModeId: expense ? String(data.get("paymentModeId") || "") || null : null,
       expenseLocation: expense ? String(data.get("expenseLocation") || "CHE") : null,
-      categoryId: expense ? categoryId : kind === "CARD_PAYMENT" ? CARD_SETTLEMENT_CATEGORY_ID : "sys_accounts",
-      subcategoryId: expense ? String(data.get("subcategoryId") ?? "") : kind === "CARD_PAYMENT" ? String(data.get("settlementSubcategoryId") ?? settlementSubcategoryId) : "sys_transfer",
+      categoryId: classified ? String(data.get("categoryId") || "sys_accounts") : kind === "LOAN_PAYMENT" ? "housing" : kind === "CARD_PAYMENT" ? CARD_SETTLEMENT_CATEGORY_ID : "sys_accounts",
+      subcategoryId: classified ? String(data.get("subcategoryId") || "sys_transfer") : kind === "LOAN_PAYMENT" ? "home_loan_emi" : kind === "CARD_PAYMENT" ? String(data.get("settlementSubcategoryId") ?? settlementSubcategoryId) : "sys_transfer",
       incomeType: kind === "INCOME" ? String(data.get("incomeType") || "") || null : null,
       incomeSourceLabel: kind === "INCOME" ? String(data.get("incomeSourceLabel") || "") || null : null,
       recurring: kind === "INCOME" && data.get("recurring") === "on",
@@ -151,6 +159,8 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
           <option value="TRANSFER">Transfer between accounts</option>
           <option value="CARD_PAYMENT">Credit-card payment</option>
           <option value="BORROWING">Borrowing</option>
+          <option value="INTEREST_ACCRUAL">Loan interest accrual</option>
+          <option value="LOAN_PAYMENT">Home-loan payment</option>
         </select>
         <small className="muted">{expense ? "Spending is recorded in Expenses and matched against your budget." : "This transaction follows its account-specific posting rules."}</small>
       </div>
@@ -175,7 +185,7 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
       </div>
       <div className="form-row">
         <div className="field">
-          <label htmlFor="exp-source">Paid from</label>
+          <label htmlFor="exp-source">{kind === "INTEREST_ACCRUAL" ? "Loan account" : "Paid from"}</label>
           <select id="exp-source" name="sourceAccountId" required value={selectedSource} onChange={(e) => setSourceId(e.target.value)} {...describe("sourceAccountId")}>
             {sources.map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
@@ -184,7 +194,7 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
           {err("sourceAccountId")}
         </div>
         <div className="field">
-          <label htmlFor="exp-destination">Paid to</label>
+          <label htmlFor="exp-destination">{kind === "INTEREST_ACCRUAL" ? "Interest ledger" : "Paid to"}</label>
           <select id="exp-destination" name="destinationAccountId" key={`${kind}-${selectedSource}`} defaultValue={existing?.destination.id} required {...describe("destinationAccountId")}>
             {destinations.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
@@ -209,11 +219,12 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
           {err("expenseLocation")}
         </div> : null}
       </div>
-      {expense ? <div className="form-row">
+      {classified ? <div className="form-row">
         <div className="field">
           <label htmlFor="exp-category">Category</label>
-          <select id="exp-category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} {...describe("categoryId")}>
-            {categories.map((c) => (
+          <select id="exp-category" name="categoryId" value={selectedCategory} onChange={(e) => setCategoryId(e.target.value)} {...describe("categoryId")}>
+            {kind === "TRANSFER" ? <option value="">General transfer</option> : null}
+            {availableCategories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -221,8 +232,9 @@ export function AddExpenseForm({ sourceAccounts, destinationAccounts, categories
         </div>
         <div className="field">
           <label htmlFor="exp-sub">Subcategory</label>
-          <select id="exp-sub" name="subcategoryId" key={categoryId} required {...describe("subcategoryId")}>
-            {subs.map((s) => (
+          <select id="exp-sub" name="subcategoryId" key={`${selectedCategory}-${kind}`} defaultValue={existing?.subcategory.id} required={expense || !!selectedCategory} {...describe("subcategoryId")}>
+            {!selectedCategory ? <option value="">Transfer</option> : null}
+            {selectedSubs.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>

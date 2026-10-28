@@ -53,7 +53,7 @@ export async function getDashboard(tx: Tx, month: string, now: Date = new Date()
   for (const d of budget?.details ?? []) {
     if (d.alert) alerts.push({ level: "warning", message: `${d.subcategoryName} has reached its alert threshold.` });
   }
-  if (budget && budget.totals && expenseTotal > 0n && BigInt(budget.totals.currentSpendingMinor) > BigInt(budget.totals.budgetUsedMinor)) {
+  if (budget && expenseTotal > 0n && await tx.transaction.count({ where: { ...inMonth, type: "EXPENSE", budgetDetailId: null } }) > 0) {
     alerts.push({ level: "info", message: "Some expenses are unbudgeted in this month." });
   }
   for (const a of ownedAccounts) {
